@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ConradIrwin/font/sfnt"
+	"github.com/amansx/font/sfnt"
 )
 
 // Metrics prints the hhea table (contains font metrics).

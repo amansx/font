@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ConradIrwin/font/sfnt"
+	"github.com/amansx/font/sfnt"
 )
 
 func usage() {
 	fmt.Println(`
-Usage: font [cmap|features|info|metrics|scrub|stats] font.[otf,ttf,woff]
+Usage: font [features|info|metrics|scrub|stats] font.[otf,ttf,woff,woff2] ...
 
 cmap: prints out Character To Glyph mappings
 features: prints the gpos/gsub tables (contains font features)
@@ -41,26 +41,35 @@ func main() {
 	}
 
 	if len(os.Args) < 1 {
-		fmt.Fprintf(os.Stderr, "Usage: font %s <font file>\n", command)
+		fmt.Fprintf(os.Stderr, "Usage: font %s <font file> ...\n", command)
 		os.Exit(1)
 	}
 
-	filename := os.Args[1]
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open font: %s\n", err)
-		os.Exit(1)
-	}
-	defer file.Close()
+	exitCode := 0
+	for _, filename := range os.Args[1:] {
+		file, err := os.Open(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to open font: %s\n", err)
+			exitCode = 1
+			continue
+		}
+		defer file.Close()
 
-	font, err := sfnt.Parse(file)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse font: %s\n", err)
-		os.Exit(1)
-	}
+		font, err := sfnt.Parse(file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to parse font: %s\n", err)
+			exitCode = 1
+			continue
+		}
 
-	if err := cmds[command](font); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
+		if len(os.Args[1:]) > 1 {
+			fmt.Println("==>", filename, "<==")
+		}
+		if err := cmds[command](font); err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+			exitCode = 1
+			continue
+		}
 	}
+	os.Exit(exitCode)
 }

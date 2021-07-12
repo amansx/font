@@ -1,8 +1,10 @@
 package sfnt
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 )
 
 var (
@@ -42,8 +44,11 @@ var (
 	// as specified by OpenType
 	TypeOpenType = MustNamedTag("OTTO")
 
-	// SignatureWoff if the magic number at the start of a wOFF file.
-	SignatureWoff = MustNamedTag("wOFF")
+	// SignatureWOFF is the magic number at the start of a WOFF file.
+	SignatureWOFF = MustNamedTag("wOFF")
+
+	// SignatureWOFF2 is the magic number at the start of a WOFF2 file.
+	SignatureWOFF2 = MustNamedTag("wOF2")
 )
 
 // Tag represents an open-type table name.
@@ -76,6 +81,16 @@ func MustNamedTag(str string) Tag {
 		panic(err)
 	}
 	return t
+}
+
+func NewTag(bytes []byte) Tag {
+	return Tag{Number: binary.BigEndian.Uint32(bytes)}
+}
+
+func ReadTag(r io.Reader) (Tag, error) {
+	bytes := make([]byte, 4)
+	_, err := io.ReadFull(r, bytes)
+	return NewTag(bytes), err
 }
 
 // String returns the ASCII representation of the tag.

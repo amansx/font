@@ -6,7 +6,7 @@ Raleway - Raleway-v4020-Regular.otf
 	SIL Open Font License, 1.1
 	Copyright (c) 2010 - 2013, Matt McInerney (matt@pixelspread.com), Pablo Impallari (impallari@gmail.com), Rodrigo Fuenzalida (hello@rfuenzalida.com) with Reserved Font Name "Raleway"
 
-Roboto - Roboto-BoldItalic.ttf 
+Roboto - Roboto-BoldItalic.ttf
 	Apache License, version 2.0
 	Copyright 2011 Google Inc. All Rights Reserved.
 
@@ -15,3 +15,7 @@ Noto Sans CJK JP Language-specific OpenType/CFF (OTF) (v2017-06-01-serif-cjk-1-1
 Noto Serif CJK OpenType/CFF Collection (OTC) (v2017-06-01-serif-cjk-1-1) - NotoSerifCJK-Regular.ttc
 	SIL Open Font License, Version 1.1
 	Noto is a trademark of Google Inc. Noto fonts are open source. Language data and some sample texts are from the Unicode CLDR project.
+
+Go-Regular.woff2
+	BSD 3-Clause License
+	Copyright (c) 2016 Bigelow & Holmes Inc.. All rights reserved.

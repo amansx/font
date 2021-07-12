@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"io/ioutil"
 	"strconv"
 
 	"golang.org/x/text/encoding/charmap"
@@ -17,6 +16,8 @@ import (
 // and Copyright.
 // https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
 type TableName struct {
+	baseTable
+
 	bytes   []byte
 	entries []*NameEntry
 }
@@ -231,13 +232,8 @@ func (nameEntry *NameEntry) Platform() string {
 	return nameEntry.PlatformID.String()
 }
 
-func parseTableName(r io.Reader) (Table, error) {
-	buf, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	r = bytes.NewBuffer(buf)
+func parseTableName(tag Tag, buf []byte) (Table, error) {
+	r := bytes.NewBuffer(buf)
 
 	var header nameHeader
 	if err := binary.Read(r, binary.BigEndian, &header); err != nil {
@@ -245,8 +241,9 @@ func parseTableName(r io.Reader) (Table, error) {
 	}
 
 	table := &TableName{
-		bytes:   buf,
-		entries: make([]*NameEntry, 0, header.Count),
+		baseTable: baseTable(tag),
+		bytes:     buf,
+		entries:   make([]*NameEntry, 0, header.Count),
 	}
 
 	for i := 0; i < int(header.Count); i++ {

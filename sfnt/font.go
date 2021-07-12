@@ -1,7 +1,6 @@
 package sfnt
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
@@ -33,15 +32,16 @@ var ErrUnsupportedFormat = errors.New("unsupported font format")
 var ErrMissingTable = errors.New("missing table")
 
 // Font represents a SFNT font, which is the underlying representation found
-// in .otf and .ttf files (and .woff and .eot files)
+// in .otf and .ttf files (and .woff, .woff2, .eot files)
 // SFNT is a container format, which contains a number of tables identified by
 // Tags. Depending on the type of glyphs embedded in the file which tables will
 // exist. In particular, there's a big different between TrueType glyphs (usually .ttf)
 // and CFF/PostScript Type 2 glyphs (usually .otf)
 type Font struct {
-	file       File
+	file File
+
 	scalerType Tag
-	tables     map[Tag]tableSection
+	tables     map[Tag]*tableSection
 }
 
 // tableSection represents a table within the font file.
@@ -50,8 +50,8 @@ type tableSection struct {
 	table Table
 
 	offset  uint32 // Offset into the file this table starts.
-	length  uint32 // (Uncompressed) Length of this table
-	zLength uint32 // Compressed length of this table
+	length  uint32 // Length of this table within the file.
+	zLength uint32 // Uncompressed length of this table.
 }
 
 // Tags is the list of tags that are defined in this font, sorted by numeric value.
@@ -78,7 +78,7 @@ func (font *Font) HasTable(tag Tag) bool {
 // AddTable adds a table to the font. If a table with the
 // given tag is already present, it will be overwritten.
 func (font *Font) AddTable(tag Tag, table Table) {
-	font.tables[tag] = tableSection{
+	font.tables[tag] = &tableSection{
 		tag:   tag,
 		table: table,
 	}
@@ -196,7 +196,7 @@ func (font *Font) Table(tag Tag) (Table, error) {
 func New(scalerType Tag) *Font {
 	font := &Font{
 		scalerType: scalerType,
-		tables:     make(map[Tag]tableSection),
+		tables:     make(map[Tag]*tableSection),
 	}
 	font.AddTable(TagHead, &TableHead{})
 	return font
@@ -211,27 +211,29 @@ type File interface {
 	Seek(int64, int) (int64, error)
 }
 
-// Parse parses an OpenType, TrueType or wOFF File and returns a Font.
+// Parse parses an OpenType, TrueType, WOFF, or WOFF2 file and returns a Font.
 // If parsing fails, an error is returned and *Font will be nil.
 func Parse(file File) (*Font, error) {
-	var magic Tag
-	if err := binary.Read(file, binary.BigEndian, &magic); err != nil {
+	magic, err := ReadTag(file)
+	if err != nil {
 		return nil, err
 	}
 
 	file.Seek(0, 0)
 
-	if magic == SignatureWoff {
-		return parseWoff(file)
-	}
-	if magic == TypeTrueType || magic == TypeOpenType || magic == TypePostScript1 || magic == TypeAppleTrueType {
+	switch magic {
+	case SignatureWOFF:
+		return parseWOFF(file)
+	case SignatureWOFF2:
+		return parseWOFF2(file)
+	case TypeTrueType, TypeOpenType, TypePostScript1, TypeAppleTrueType:
 		return parseOTF(file)
+	default:
+		return nil, ErrUnsupportedFormat
 	}
-
-	return nil, ErrUnsupportedFormat
 }
 
-// StrictParse parses an OpenType, TrueType or wOFF File and returns a Font.
+// StrictParse parses an OpenType, TrueType, WOFF or WOFF2 file and returns a Font.
 // Each table will be fully parsed and an error is returned if any fail.
 func StrictParse(file File) (*Font, error) {
 	font, err := Parse(file)
